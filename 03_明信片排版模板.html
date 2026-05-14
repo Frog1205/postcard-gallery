@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>石渠 AI 文创课 · A6 明信片排版模板</title>
+<style>
+  /* ============================================================
+     使用说明（老师必读）
+     ------------------------------------------------------------
+     1. 用 Chrome / Edge 浏览器打开本文件
+     2. 在下方"学员信息填写区"修改图片路径、姓名、日期
+     3. 按 Ctrl/Cmd + P 唤出打印对话框
+     4. 关键设置：
+        - 纸张：A4
+        - 方向：横向（Landscape）
+        - 缩放：默认 100%（关闭"适应纸张大小"）
+        - 边距：无 / 自定义 0
+        - 勾选"背景图形"
+     5. 双面打印：选"双面打印 - 沿长边翻转"
+     6. 打印完，沿中线裁切，得到 2 张 A6 明信片
+     7. 推荐纸张：300g 厚铜版纸 / 哑光卡纸
+     ============================================================ */
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "STHeiti", sans-serif;
+    background: #ddd;
+  }
+
+  /* —— A4 横版纸张容器 —— */
+  .page {
+    width: 297mm;
+    height: 210mm;
+    background: white;
+    margin: 20px auto;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,.15);
+    page-break-after: always;
+    page-break-inside: avoid;
+  }
+
+  /* —— 裁切中线（仅屏幕显示，打印可选） —— */
+  .cut-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 105mm;
+    border-top: 1px dashed #aaa;
+    pointer-events: none;
+  }
+  .cut-mark {
+    position: absolute;
+    font-size: 9pt;
+    color: #888;
+    background: white;
+    padding: 0 6px;
+  }
+  .cut-mark.left  { top: 102mm; left: 4mm; }
+  .cut-mark.right { top: 102mm; right: 4mm; }
+
+  /* —— 单张明信片框架 —— */
+  .card {
+    width: 148mm;
+    height: 105mm;
+    position: absolute;
+    left: 74.5mm; /* (297-148)/2 居中 */
+    overflow: hidden;
+  }
+  .card.top    { top: 0; }
+  .card.bottom { top: 105mm; }
+
+  /* ===================== 正面 ===================== */
+  .front {
+    background: #FFF8E7;
+    padding: 4mm;
+    display: flex;
+    flex-direction: column;
+  }
+  .front-image {
+    flex: 1;
+    background-color: #E8DFC7;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    border: 1px solid #E8A02C;
+    border-radius: 2mm;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #8A7B5C;
+    font-size: 11pt;
+    position: relative;
+  }
+  .front-image .placeholder {
+    text-align: center;
+    line-height: 1.6;
+  }
+  .front-strip {
+    margin-top: 2mm;
+    height: 6mm;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2mm;
+    font-size: 8pt;
+    color: #7A4A1A;
+  }
+  .front-strip .title {
+    font-weight: 700;
+    color: #B8332C;
+    letter-spacing: 1px;
+  }
+  .front-strip .flag {
+    display: flex;
+    height: 3mm;
+    width: 30mm;
+    border-radius: 1mm;
+    overflow: hidden;
+  }
+  .front-strip .flag span { flex: 1; }
+  .front-strip .flag .c1 { background: #2C5F8D; }
+  .front-strip .flag .c2 { background: #FFFFFF; }
+  .front-strip .flag .c3 { background: #B8332C; }
+  .front-strip .flag .c4 { background: #2E7D4A; }
+  .front-strip .flag .c5 { background: #E8A02C; }
+
+  /* ===================== 背面 ===================== */
+  .back {
+    background: #FFFBF0;
+    padding: 5mm 6mm;
+    display: grid;
+    grid-template-columns: 1fr 1px 1fr;
+    grid-template-rows: 1fr;
+    gap: 0;
+  }
+  .back-divider {
+    background: #E8A02C;
+    width: 1px;
+    height: 100%;
+  }
+
+  /* 左侧：寄语区 */
+  .msg-area {
+    padding-right: 4mm;
+    display: flex;
+    flex-direction: column;
+  }
+  .msg-title {
+    color: #B8332C;
+    font-size: 10pt;
+    font-weight: 700;
+    margin-bottom: 2mm;
+    letter-spacing: 1px;
+  }
+  .msg-lines {
+    flex: 1;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 7mm,
+      #E8D9B0 7mm,
+      #E8D9B0 7.2mm
+    );
+  }
+  .msg-foot {
+    font-size: 7.5pt;
+    color: #8A7B5C;
+    text-align: right;
+    margin-top: 1mm;
+    font-style: italic;
+  }
+
+  /* 右侧：邮票 + 地址 */
+  .addr-area {
+    padding-left: 4mm;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  .stamp {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 22mm;
+    height: 28mm;
+    border: 1.5px dashed #B8332C;
+    color: #B8332C;
+    font-size: 7pt;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 1.4;
+    border-radius: 1mm;
+  }
+  .stamp-inner {
+    transform: rotate(0deg);
+  }
+  .to-label {
+    font-size: 10pt;
+    color: #B8332C;
+    font-weight: 700;
+    margin-bottom: 2mm;
+    letter-spacing: 1px;
+  }
+  .addr-lines {
+    margin-top: 18mm;
+    flex: 1;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 8mm,
+      #C9B98F 8mm,
+      #C9B98F 8.2mm
+    );
+    background-position: 0 0;
+    background-size: 100% 8.2mm;
+    max-height: 50mm;
+  }
+  .postcode {
+    margin-top: 2mm;
+    display: flex;
+    gap: 1.2mm;
+  }
+  .postcode .box {
+    width: 7mm;
+    height: 9mm;
+    border: 1px solid #B8332C;
+    border-radius: 0.5mm;
+  }
+  .course-foot {
+    margin-top: auto;
+    padding-top: 2mm;
+    font-size: 7pt;
+    color: #8A7B5C;
+    text-align: right;
+    letter-spacing: 0.5px;
+  }
+
+  /* ===================== 屏幕辅助 ===================== */
+  .legend {
+    max-width: 900px;
+    margin: 30px auto;
+    padding: 24px 30px;
+    background: white;
+    border-left: 6px solid #B8332C;
+    font-size: 14px;
+    line-height: 1.7;
+    color: #333;
+  }
+  .legend h2 { color: #B8332C; margin-bottom: 8px; }
+  .legend code {
+    background: #FFE9B3; padding: 1px 6px; border-radius: 3px;
+  }
+
+  /* ===================== 打印控制 ===================== */
+  @page {
+    size: A4 landscape;
+    margin: 0;
+  }
+  @media print {
+    body { background: white; }
+    .legend, .page-label { display: none !important; }
+    .page {
+      margin: 0;
+      box-shadow: none;
+      page-break-after: always;
+    }
+    .cut-line { border-top: 1px dashed #bbb; }
+  }
+
+  .page-label {
+    max-width: 900px;
+    margin: 18px auto -8px;
+    font-size: 13px;
+    color: #7A6F60;
+    padding: 0 8px;
+  }
+  .page-label strong { color: #B8332C; }
+</style>
+</head>
+<body>
+
+<div class="legend">
+  <h2>石渠 AI 文创课 · A6 明信片排版模板</h2>
+  <p>本文件包含 <strong>4 个打印页面</strong>：A4 拼版正面、A4 拼版背面（镜像对位）、单张 A6 正面、单张 A6 背面。</p>
+  <p><strong>使用步骤：</strong></p>
+  <ol>
+    <li>用 Chrome / Edge 打开本 HTML。</li>
+    <li>把学员图保存到本文件同目录，命名如 <code>img/zhaxi_yak.png</code>。</li>
+    <li>在源码搜索 <code>data-student</code>，按上方注释替换 <code>background-image</code> 路径与"姓名 / 日期 / 寄语标题"。</li>
+    <li>Ctrl/Cmd + P 打印：<strong>A4 横向、缩放 100%、边距 0、勾选背景图形、双面沿长边翻转</strong>。</li>
+    <li>打印后沿中线裁切，得到 2 张 A6 明信片。</li>
+  </ol>
+  <p><strong>批量做法：</strong>复制 <code>.page</code> 整块，对应正面和背面页一起增加；或把多名学员的图按顺序排进同一份拼版。</p>
+</div>
+
+<!-- ================================================================ -->
+<!-- 第 1 页：A4 拼版 · 正面（两张明信片正面）                          -->
+<!-- ================================================================ -->
+<div class="page-label">第 1 页 · <strong>A4 拼版正面</strong>（上：学员1 / 下：学员2）</div>
+<div class="page" id="page-front-1">
+
+  <!-- 学员 1 正面 -->
+  <div class="card top front" data-student="1">
+    <!-- 替换下面 div 的 style="background-image: url('img/学员1.png')" -->
+    <div class="front-image" style="background-image: url('');">
+      <div class="placeholder">
+        【替换为学员 1 的 AI 图】<br>
+        建议尺寸 1480 × 880 px<br>
+        编辑 <code>background-image</code> 路径
+      </div>
+    </div>
+    <div class="front-strip">
+      <span class="title">扎溪卡 · AI 文创第一课</span>
+      <span class="flag">
+        <span class="c1"></span><span class="c2"></span><span class="c3"></span><span class="c4"></span><span class="c5"></span>
+      </span>
+      <span>By 【学员姓名】 / 2026</span>
+    </div>
+  </div>
+
+  <div class="cut-line"></div>
+  <span class="cut-mark left">↑ 学员 1 ｜ ↓ 学员 2 ｜ 沿此线裁切</span>
+  <span class="cut-mark right">沿此线裁切</span>
+
+  <!-- 学员 2 正面 -->
+  <div class="card bottom front" data-student="2">
+    <div class="front-image" style="background-image: url('');">
+      <div class="placeholder">
+        【替换为学员 2 的 AI 图】<br>
+        建议尺寸 1480 × 880 px
+      </div>
+    </div>
+    <div class="front-strip">
+      <span class="title">扎溪卡 · AI 文创第一课</span>
+      <span class="flag">
+        <span class="c1"></span><span class="c2"></span><span class="c3"></span><span class="c4"></span><span class="c5"></span>
+      </span>
+      <span>By 【学员姓名】 / 2026</span>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- 第 2 页：A4 拼版 · 背面（镜像对位：学员2 在上、学员1 在下）       -->
+<!-- 注意：双面打印沿长边翻转时，上下会调换，所以这里上=学员2 下=学员1 -->
+<!-- ================================================================ -->
+<div class="page-label">第 2 页 · <strong>A4 拼版背面</strong>（上下镜像，配合双面打印沿长边翻转）</div>
+<div class="page" id="page-back-1">
+
+  <!-- 学员 2 背面（与上一页 bottom 对位） -->
+  <div class="card top back" data-student="2">
+    <div class="msg-area">
+      <div class="msg-title">扎西德勒 · TO ___________</div>
+      <div class="msg-lines"></div>
+      <div class="msg-foot">—— 石渠 AI 文创第一课</div>
+    </div>
+    <div class="back-divider"></div>
+    <div class="addr-area">
+      <div class="stamp"><div class="stamp-inner">邮票<br>STAMP</div></div>
+      <div class="to-label">TO ·  寄给谁</div>
+      <div class="addr-lines"></div>
+      <div class="postcode">
+        <div class="box"></div><div class="box"></div><div class="box"></div>
+        <div class="box"></div><div class="box"></div><div class="box"></div>
+      </div>
+      <div class="course-foot">扎溪卡 · AI 文创第一课 · 2026.5</div>
+    </div>
+  </div>
+
+  <div class="cut-line"></div>
+  <span class="cut-mark left">↑ 学员 2 背面 ｜ ↓ 学员 1 背面（已与正面对位）</span>
+
+  <!-- 学员 1 背面（与上一页 top 对位） -->
+  <div class="card bottom back" data-student="1">
+    <div class="msg-area">
+      <div class="msg-title">扎西德勒 · TO ___________</div>
+      <div class="msg-lines"></div>
+      <div class="msg-foot">—— 石渠 AI 文创第一课</div>
+    </div>
+    <div class="back-divider"></div>
+    <div class="addr-area">
+      <div class="stamp"><div class="stamp-inner">邮票<br>STAMP</div></div>
+      <div class="to-label">TO ·  寄给谁</div>
+      <div class="addr-lines"></div>
+      <div class="postcode">
+        <div class="box"></div><div class="box"></div><div class="box"></div>
+        <div class="box"></div><div class="box"></div><div class="box"></div>
+      </div>
+      <div class="course-foot">扎溪卡 · AI 文创第一课 · 2026.5</div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- 第 3 页：单张 A6 · 正面（备选 / 单独打 1 张时用）                  -->
+<!-- ================================================================ -->
+<div class="page-label">第 3 页 · <strong>单张 A6 正面</strong>（A4 上居左居上，方便手动裁切；或单独打一张时使用）</div>
+<div class="page" id="page-front-single">
+  <div class="card top front" style="left: 8mm; top: 8mm;">
+    <div class="front-image" style="background-image: url('');">
+      <div class="placeholder">
+        【单张明信片正面】<br>
+        zhaxi_yak.png
+      </div>
+    </div>
+    <div class="front-strip">
+      <span class="title">扎溪卡 · AI 文创第一课</span>
+      <span class="flag">
+        <span class="c1"></span><span class="c2"></span><span class="c3"></span><span class="c4"></span><span class="c5"></span>
+      </span>
+      <span>By 【学员姓名】 / 2026</span>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- 第 4 页：单张 A6 · 背面                                             -->
+<!-- ================================================================ -->
+<div class="page-label">第 4 页 · <strong>单张 A6 背面</strong></div>
+<div class="page" id="page-back-single">
+  <div class="card top back" style="left: 8mm; top: 8mm;">
+    <div class="msg-area">
+      <div class="msg-title">扎西德勒 · TO ___________</div>
+      <div class="msg-lines"></div>
+      <div class="msg-foot">—— 石渠 AI 文创第一课</div>
+    </div>
+    <div class="back-divider"></div>
+    <div class="addr-area">
+      <div class="stamp"><div class="stamp-inner">邮票<br>STAMP</div></div>
+      <div class="to-label">TO ·  寄给谁</div>
+      <div class="addr-lines"></div>
+      <div class="postcode">
+        <div class="box"></div><div class="box"></div><div class="box"></div>
+        <div class="box"></div><div class="box"></div><div class="box"></div>
+      </div>
+      <div class="course-foot">扎溪卡 · AI 文创第一课 · 2026.5</div>
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <h2>三个温柔的寄语题目（给学员选）</h2>
+  <ol>
+    <li><strong>写给三年后的自己</strong>——你希望那时候的你过得怎么样？</li>
+    <li><strong>写给阿妈 / 阿爸</strong>——一句你平时没说出口的话。</li>
+    <li><strong>写给来过石渠的远方朋友</strong>——你想让 TA 知道什么？</li>
+  </ol>
+  <h2>设计说明</h2>
+  <ul>
+    <li>主色：扎溪卡夕阳暖橙 <code>#E8A02C</code> + 嘛呢经墙朱砂 <code>#B8332C</code> + 米白底 <code>#FFF8E7</code></li>
+    <li>正面右下"五色条"= 五色经幡顺序（蓝/白/红/绿/黄）</li>
+    <li>背面遵循国际明信片版式：左寄语 / 右地址 + 邮票位 / 六格邮编</li>
+    <li>所有横线为印刷淡米色 <code>#E8D9B0</code>，不影响学员手写阅读</li>
+  </ul>
+</div>
+
+</body>
+</html>
