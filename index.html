@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI文创-明信片作品展</title>
+<style>
+  :root {
+    --warm-bg: #FDF6E3;
+    --card-bg: #FFF8E7;
+    --accent: #E8A02C;
+    --red: #B8332C;
+    --brown: #7A4A1A;
+    --light-line: #E8D9B0;
+    --text: #4A3F35;
+    --shadow: rgba(0,0,0,0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: var(--warm-bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* Header */
+  .site-header {
+    background: linear-gradient(135deg, #2C5F8D 0%, #B8332C 50%, #E8A02C 100%);
+    padding: 40px 20px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .site-header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      90deg,
+      rgba(255,255,255,0.05) 0px,
+      rgba(255,255,255,0.05) 2px,
+      transparent 2px,
+      transparent 40px
+    );
+  }
+  .site-header h1 {
+    font-size: 2.4rem;
+    color: white;
+    letter-spacing: 6px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    position: relative;
+  }
+  .site-header p {
+    color: rgba(255,255,255,0.85);
+    margin-top: 8px;
+    font-size: 1rem;
+    letter-spacing: 2px;
+    position: relative;
+  }
+  .flag-bar {
+    display: flex;
+    height: 4px;
+    margin-top: 20px;
+    border-radius: 2px;
+    overflow: hidden;
+    max-width: 300px;
+    margin-left: auto;
+    margin-right: auto;
+    position: relative;
+  }
+  .flag-bar span { flex: 1; }
+  .fb1 { background: #2C5F8D; }
+  .fb2 { background: #FFFFFF; }
+  .fb3 { background: #B8332C; }
+  .fb4 { background: #2E7D4A; }
+  .fb5 { background: #E8A02C; }
+
+  /* Toolbar */
+  .toolbar {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .btn-scan {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 28px;
+    background: var(--red);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(184,51,44,0.3);
+  }
+  .btn-scan:hover {
+    background: #9A2820;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(184,51,44,0.4);
+  }
+  .btn-scan svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+  }
+  .stats {
+    font-size: 0.9rem;
+    color: #8A7B5C;
+    letter-spacing: 1px;
+  }
+  .stats strong {
+    color: var(--red);
+    font-size: 1.1rem;
+  }
+  .toolbar-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .view-toggle {
+    display: flex;
+    gap: 4px;
+    background: white;
+    border-radius: 8px;
+    padding: 4px;
+    box-shadow: 0 1px 4px var(--shadow);
+  }
+  .view-btn {
+    padding: 8px 16px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: var(--brown);
+    transition: all 0.2s;
+  }
+  .view-btn.active {
+    background: var(--accent);
+    color: white;
+  }
+  .btn-print {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 20px;
+    background: var(--brown);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+    box-shadow: 0 1px 4px var(--shadow);
+  }
+  .btn-print:hover {
+    background: #5C4A30;
+    transform: translateY(-1px);
+  }
+  .btn-print:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+  }
+  .btn-print svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+  }
+
+  /* Gallery Grid */
+  .gallery {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px 60px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 28px;
+  }
+  .gallery.list-view {
+    grid-template-columns: 1fr;
+    max-width: 800px;
+  }
+
+  /* Postcard */
+  .postcard {
+    background: var(--card-bg);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px var(--shadow);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+  }
+  .postcard:hover {
+    transform: translateY(-4px) rotate(-0.5deg);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.18);
+  }
+  .postcard-img-wrap {
+    position: relative;
+    width: 100%;
+    padding-top: 66%;
+    overflow: hidden;
+    background: #E8DFC7;
+  }
+  .postcard-img-wrap img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+  }
+  .postcard:hover .postcard-img-wrap img {
+    transform: scale(1.05);
+  }
+  .postcard-border {
+    position: absolute;
+    inset: 6px;
+    border: 2px solid rgba(232,160,44,0.5);
+    border-radius: 4px;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .postcard-info {
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .postcard-title {
+    font-weight: 700;
+    color: var(--red);
+    font-size: 1rem;
+    letter-spacing: 1px;
+  }
+  .postcard-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: var(--accent);
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 700;
+    border-radius: 50%;
+  }
+  .postcard-flag {
+    display: flex;
+    height: 3px;
+    overflow: hidden;
+  }
+  .postcard-flag span { flex: 1; }
+
+  /* Stamp decoration */
+  .stamp-deco {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 44px;
+    height: 54px;
+    background: rgba(255,255,255,0.85);
+    border: 1.5px dashed var(--red);
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    color: var(--red);
+    text-align: center;
+    line-height: 1.3;
+    z-index: 2;
+    backdrop-filter: blur(4px);
+  }
+
+  /* Empty state */
+  .empty-state {
+    max-width: 500px;
+    margin: 80px auto;
+    text-align: center;
+    padding: 60px 30px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px var(--shadow);
+  }
+  .empty-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    opacity: 0.6;
+  }
+  .empty-state h2 {
+    color: var(--brown);
+    margin-bottom: 12px;
+    font-size: 1.3rem;
+  }
+  .empty-state p {
+    color: #8A7B5C;
+    line-height: 1.8;
+    font-size: 0.95rem;
+  }
+
+  /* Lightbox */
+  .lightbox {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    backdrop-filter: blur(8px);
+  }
+  .lightbox.active { display: flex; }
+  .lightbox-inner {
+    max-width: 900px;
+    width: 100%;
+    background: var(--card-bg);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    animation: lbIn 0.3s ease;
+  }
+  @keyframes lbIn {
+    from { opacity: 0; transform: scale(0.9) translateY(20px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .lightbox-img {
+    width: 100%;
+    max-height: 65vh;
+    object-fit: contain;
+    background: #E8DFC7;
+    display: block;
+  }
+  .lightbox-detail {
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .lightbox-detail h3 {
+    color: var(--red);
+    font-size: 1.3rem;
+    letter-spacing: 2px;
+  }
+  .lightbox-detail .lb-meta {
+    color: #8A7B5C;
+    font-size: 0.9rem;
+  }
+  .lb-close {
+    position: fixed;
+    top: 20px;
+    right: 24px;
+    width: 44px;
+    height: 44px;
+    border: 2px solid rgba(255,255,255,0.6);
+    border-radius: 50%;
+    background: rgba(0,0,0,0.4);
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+    transition: all 0.2s;
+  }
+  .lb-close:hover {
+    background: var(--red);
+    border-color: var(--red);
+  }
+  .lb-nav {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 48px;
+    height: 48px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    color: white;
+    font-size: 1.4rem;
+    cursor: pointer;
+    z-index: 1001;
+    transition: all 0.2s;
+  }
+  .lb-nav:hover { background: rgba(255,255,255,0.3); }
+  .lb-prev { left: 16px; }
+  .lb-next { right: 16px; }
+
+  /* Back side preview in lightbox */
+  .lb-back-preview {
+    border-top: 1px dashed var(--light-line);
+    padding: 20px 24px;
+    display: grid;
+    grid-template-columns: 1fr 1px 1fr;
+    gap: 0;
+    min-height: 140px;
+  }
+  .lb-back-divider {
+    background: var(--accent);
+    width: 1px;
+  }
+  .lb-msg-area {
+    padding-right: 16px;
+  }
+  .lb-msg-title {
+    color: var(--red);
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+  }
+  .lb-msg-lines {
+    height: 80px;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0, transparent 22px,
+      #E8D9B0 22px, #E8D9B0 22.5px
+    );
+  }
+  .lb-addr-area {
+    padding-left: 16px;
+    position: relative;
+  }
+  .lb-stamp {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 40px;
+    height: 50px;
+    border: 1.5px dashed var(--red);
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    color: var(--red);
+  }
+  .lb-to {
+    font-size: 0.85rem;
+    color: var(--red);
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+  .lb-addr-lines {
+    margin-top: 30px;
+    height: 50px;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0, transparent 22px,
+      #C9B98F 22px, #C9B98F 22.5px
+    );
+  }
+
+  /* Footer */
+  .site-footer {
+    text-align: center;
+    padding: 30px 20px;
+    color: #8A7B5C;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+  }
+
+  /* ===================== Print Preview Overlay ===================== */
+  .print-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 2000;
+    overflow-y: auto;
+    backdrop-filter: blur(4px);
+  }
+  .print-overlay.active { display: block; }
+  .print-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 2001;
+    background: white;
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+  }
+  .print-toolbar h3 {
+    color: var(--red);
+    font-size: 1.1rem;
+    letter-spacing: 1px;
+  }
+  .print-toolbar-btns {
+    display: flex;
+    gap: 10px;
+  }
+  .print-toolbar .pt-btn {
+    padding: 8px 24px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .pt-btn-print {
+    background: var(--red);
+    color: white;
+  }
+  .pt-btn-print:hover { background: #9A2820; }
+  .pt-btn-close {
+    background: #eee;
+    color: var(--text);
+  }
+  .pt-btn-close:hover { background: #ddd; }
+  .print-pages {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding-bottom: 40px;
+  }
+
+  /* A6 print card on screen preview */
+  .print-page {
+    width: 148mm;
+    height: 105mm;
+    background: white;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .print-page-label {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 4px;
+    text-align: center;
+  }
+  .print-pair {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* Front side print */
+  .prt-front {
+    background: #FFF8E7;
+    padding: 4mm;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+  }
+  .prt-front-image {
+    flex: 1;
+    background-color: #E8DFC7;
+    border: 1px solid #E8A02C;
+    border-radius: 2mm;
+    overflow: hidden;
+    position: relative;
+  }
+  .prt-front-image img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .prt-front-strip {
+    margin-top: 2mm;
+    height: 6mm;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2mm;
+    font-size: 8pt;
+    color: #7A4A1A;
+  }
+  .prt-front-strip .prt-title {
+    font-weight: 700;
+    color: #B8332C;
+    letter-spacing: 1px;
+  }
+  .prt-front-strip .prt-flag {
+    display: flex;
+    height: 3mm;
+    width: 30mm;
+    border-radius: 1mm;
+    overflow: hidden;
+  }
+  .prt-front-strip .prt-flag span { flex: 1; }
+
+  /* Back side print */
+  .prt-back {
+    background: #FFFBF0;
+    padding: 5mm 6mm;
+    display: grid;
+    grid-template-columns: 1fr 1px 1fr;
+    width: 100%;
+    height: 100%;
+  }
+  .prt-back-divider {
+    background: #E8A02C;
+    width: 1px;
+  }
+  .prt-msg-area {
+    padding-right: 4mm;
+    display: flex;
+    flex-direction: column;
+  }
+  .prt-msg-title {
+    color: #B8332C;
+    font-size: 10pt;
+    font-weight: 700;
+    margin-bottom: 2mm;
+    letter-spacing: 1px;
+  }
+  .prt-msg-lines {
+    flex: 1;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0, transparent 7mm,
+      #E8D9B0 7mm, #E8D9B0 7.2mm
+    );
+  }
+  .prt-msg-foot {
+    font-size: 7.5pt;
+    color: #8A7B5C;
+    text-align: right;
+    margin-top: 1mm;
+    font-style: italic;
+  }
+  .prt-addr-area {
+    padding-left: 4mm;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  .prt-stamp {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 22mm;
+    height: 28mm;
+    border: 1.5px dashed #B8332C;
+    color: #B8332C;
+    font-size: 7pt;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 1.4;
+    border-radius: 1mm;
+  }
+  .prt-to-label {
+    font-size: 10pt;
+    color: #B8332C;
+    font-weight: 700;
+    margin-bottom: 2mm;
+    letter-spacing: 1px;
+  }
+  .prt-addr-lines {
+    margin-top: 18mm;
+    flex: 1;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0, transparent 8mm,
+      #C9B98F 8mm, #C9B98F 8.2mm
+    );
+    max-height: 50mm;
+  }
+  .prt-postcode {
+    margin-top: 2mm;
+    display: flex;
+    gap: 1.2mm;
+  }
+  .prt-postcode .prt-box {
+    width: 7mm;
+    height: 9mm;
+    border: 1px solid #B8332C;
+    border-radius: 0.5mm;
+  }
+  .prt-course-foot {
+    margin-top: auto;
+    padding-top: 2mm;
+    font-size: 7pt;
+    color: #8A7B5C;
+    text-align: right;
+    letter-spacing: 0.5px;
+  }
+
+  /* ===================== Actual Print ===================== */
+  @page {
+    size: 148mm 105mm;
+    margin: 0;
+  }
+  @media print {
+    body > *:not(.print-overlay) { display: none !important; }
+    .print-overlay {
+      display: block !important;
+      position: static;
+      background: none;
+      backdrop-filter: none;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .print-toolbar { display: none !important; }
+    .print-pages { padding: 0; gap: 0; }
+    .print-pair { gap: 0; }
+    .print-page-label { display: none !important; }
+    .print-page {
+      box-shadow: none;
+      page-break-after: always;
+      page-break-inside: avoid;
+      width: 148mm;
+      height: 105mm;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .site-header h1 { font-size: 1.6rem; letter-spacing: 3px; }
+    .gallery { grid-template-columns: 1fr; padding: 0 12px 40px; }
+    .toolbar { padding: 16px 12px; }
+    .view-toggle { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <h1>AI文创-明信片作品展</h1>
+  <p>AI 文创课 · 学员作品集</p>
+  <div class="flag-bar">
+    <span class="fb1"></span><span class="fb2"></span><span class="fb3"></span><span class="fb4"></span><span class="fb5"></span>
+  </div>
+</header>
+
+<div class="toolbar">
+  <button class="btn-scan" id="btnScan" onclick="scanFolder()">
+    <svg viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+    选择图片文件夹
+  </button>
+  <span class="stats" id="stats"></span>
+  <div class="toolbar-right">
+    <div class="view-toggle">
+      <button class="view-btn active" data-view="grid" onclick="setView('grid')">卡片</button>
+      <button class="view-btn" data-view="list" onclick="setView('list')">列表</button>
+    </div>
+    <button class="btn-print" id="btnPrint" onclick="openPrintPreview()" disabled>
+      <svg viewBox="0 0 24 24"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
+      明信片打印
+    </button>
+  </div>
+</div>
+
+<div class="gallery" id="gallery">
+  <div class="empty-state" id="emptyState">
+    <div class="empty-icon">&#x1F4EC;</div>
+    <h2>还没有加载明信片</h2>
+    <p>
+      点击上方「选择图片文件夹」按钮<br>
+      选择存放明信片图片的文件夹<br>
+      支持 PNG / JPG / WEBP 格式<br>
+      按「描述-序号」命名，如：秋日湖畔-1
+    </p>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox">
+  <button class="lb-close" onclick="closeLightbox()">&times;</button>
+  <button class="lb-nav lb-prev" onclick="navLightbox(-1)">&#8249;</button>
+  <button class="lb-nav lb-next" onclick="navLightbox(1)">&#8250;</button>
+  <div class="lightbox-inner">
+    <img class="lightbox-img" id="lbImg" src="" alt="">
+    <div class="lightbox-detail">
+      <div>
+        <h3 id="lbTitle"></h3>
+        <span class="lb-meta" id="lbMeta"></span>
+      </div>
+      <span class="postcard-num" id="lbNum" style="width:36px;height:36px;font-size:1rem;"></span>
+    </div>
+    <div class="lb-back-preview">
+      <div class="lb-msg-area">
+        <div class="lb-msg-title">寄语 · TO ___________</div>
+        <div class="lb-msg-lines"></div>
+      </div>
+      <div class="lb-back-divider"></div>
+      <div class="lb-addr-area">
+        <div class="lb-stamp">邮票<br>STAMP</div>
+        <div class="lb-to">TO · 寄给谁</div>
+        <div class="lb-addr-lines"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Print Preview Overlay -->
+<div class="print-overlay" id="printOverlay">
+  <div class="print-toolbar">
+    <h3>明信片打印预览</h3>
+    <div class="print-toolbar-btns">
+      <button class="pt-btn pt-btn-close" onclick="closePrintPreview()">返回</button>
+      <button class="pt-btn pt-btn-print" onclick="doPrint()">打印</button>
+    </div>
+  </div>
+  <div class="print-pages" id="printPages"></div>
+</div>
+
+<footer class="site-footer">
+  AI文创-明信片作品展
+</footer>
+
+<script>
+let cards = [];
+let currentLbIndex = -1;
+
+function parseFilename(name) {
+  const base = name.replace(/\.\w+$/, '');
+  const match = base.match(/^(.+?)[-_](\d+)$/);
+  if (match) {
+    return { description: match[1], number: parseInt(match[2], 10) };
+  }
+  return { description: base, number: 0 };
+}
+
+async function scanFolder() {
+  if (!('showDirectoryPicker' in window)) {
+    alert('当前浏览器不支持文件夹选择，请使用 Chrome 或 Edge 浏览器。');
+    return;
+  }
+  try {
+    const dirHandle = await window.showDirectoryPicker();
+    cards = [];
+    const imageExts = ['.png', '.jpg', '.jpeg', '.webp', '.bmp', '.gif'];
+
+    for await (const entry of dirHandle.values()) {
+      if (entry.kind !== 'file') continue;
+      const ext = entry.name.substring(entry.name.lastIndexOf('.')).toLowerCase();
+      if (!imageExts.includes(ext)) continue;
+
+      const file = await entry.getFile();
+      const url = URL.createObjectURL(file);
+      const parsed = parseFilename(entry.name);
+      cards.push({
+        filename: entry.name,
+        url: url,
+        description: parsed.description,
+        number: parsed.number,
+        size: file.size
+      });
+    }
+
+    cards.sort((a, b) => {
+      if (a.description !== b.description) return a.description.localeCompare(b.description, 'zh');
+      return a.number - b.number;
+    });
+
+    renderGallery();
+  } catch (e) {
+    if (e.name !== 'AbortError') {
+      console.error(e);
+    }
+  }
+}
+
+function renderGallery() {
+  const gallery = document.getElementById('gallery');
+  const stats = document.getElementById('stats');
+  const empty = document.getElementById('emptyState');
+
+  if (cards.length === 0) {
+    gallery.innerHTML = '';
+    gallery.appendChild(empty);
+    empty.style.display = '';
+    stats.textContent = '';
+    return;
+  }
+
+  const groups = new Set(cards.map(c => c.description));
+  stats.innerHTML = '共 <strong>' + cards.length + '</strong> 张作品 · <strong>' + groups.size + '</strong> 个系列';
+  document.getElementById('btnPrint').disabled = false;
+
+  gallery.innerHTML = cards.map((card, i) => `
+    <div class="postcard" onclick="openLightbox(${i})">
+      <div class="postcard-img-wrap">
+        <img src="${card.url}" alt="${card.description}" loading="lazy">
+        <div class="postcard-border"></div>
+        <div class="stamp-deco">邮票<br>STAMP</div>
+      </div>
+      <div class="postcard-flag">
+        <span class="fb1"></span><span class="fb2"></span><span class="fb3"></span><span class="fb4"></span><span class="fb5"></span>
+      </div>
+      <div class="postcard-info">
+        <span class="postcard-title">${card.description}</span>
+        <span class="postcard-num">${card.number || '#'}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function setView(mode) {
+  const gallery = document.getElementById('gallery');
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b.dataset.view === mode));
+  gallery.classList.toggle('list-view', mode === 'list');
+}
+
+function openLightbox(index) {
+  currentLbIndex = index;
+  const card = cards[index];
+  document.getElementById('lbImg').src = card.url;
+  document.getElementById('lbTitle').textContent = card.description;
+  document.getElementById('lbMeta').textContent = card.filename;
+  document.getElementById('lbNum').textContent = card.number || '#';
+  document.getElementById('lightbox').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('active');
+  document.body.style.overflow = '';
+  currentLbIndex = -1;
+}
+
+function navLightbox(dir) {
+  if (cards.length === 0) return;
+  currentLbIndex = (currentLbIndex + dir + cards.length) % cards.length;
+  const card = cards[currentLbIndex];
+  document.getElementById('lbImg').src = card.url;
+  document.getElementById('lbTitle').textContent = card.description;
+  document.getElementById('lbMeta').textContent = card.filename;
+  document.getElementById('lbNum').textContent = card.number || '#';
+}
+
+document.addEventListener('keydown', e => {
+  if (currentLbIndex < 0) return;
+  if (e.key === 'Escape') closeLightbox();
+  if (e.key === 'ArrowLeft') navLightbox(-1);
+  if (e.key === 'ArrowRight') navLightbox(1);
+});
+
+document.getElementById('lightbox').addEventListener('click', e => {
+  if (e.target.id === 'lightbox') closeLightbox();
+});
+
+function buildFrontHTML(card) {
+  return `<div class="prt-front">
+    <div class="prt-front-image"><img src="${card.url}" alt="${card.description}"></div>
+    <div class="prt-front-strip">
+      <span class="prt-title">${card.description}</span>
+      <span class="prt-flag">
+        <span class="fb1"></span><span class="fb2"></span><span class="fb3"></span><span class="fb4"></span><span class="fb5"></span>
+      </span>
+      <span>No.${card.number || '#'} / 2026</span>
+    </div>
+  </div>`;
+}
+
+function buildBackHTML(card) {
+  return `<div class="prt-back">
+    <div class="prt-msg-area">
+      <div class="prt-msg-title">寄语 · TO ___________</div>
+      <div class="prt-msg-lines"></div>
+      <div class="prt-msg-foot">—— ${card.description} · No.${card.number || '#'}</div>
+    </div>
+    <div class="prt-back-divider"></div>
+    <div class="prt-addr-area">
+      <div class="prt-stamp">邮票<br>STAMP</div>
+      <div class="prt-to-label">TO · 寄给谁</div>
+      <div class="prt-addr-lines"></div>
+      <div class="prt-postcode">
+        <div class="prt-box"></div><div class="prt-box"></div><div class="prt-box"></div>
+        <div class="prt-box"></div><div class="prt-box"></div><div class="prt-box"></div>
+      </div>
+      <div class="prt-course-foot">AI 文创课 · 明信片作品 · 2026</div>
+    </div>
+  </div>`;
+}
+
+function openPrintPreview() {
+  if (cards.length === 0) return;
+  const container = document.getElementById('printPages');
+  container.innerHTML = cards.map((card, i) => `
+    <div class="print-pair">
+      <span class="print-page-label">第 ${i + 1} 张 ·「${card.description}」· 正面</span>
+      <div class="print-page">${buildFrontHTML(card)}</div>
+      <span class="print-page-label">第 ${i + 1} 张 ·「${card.description}」· 背面</span>
+      <div class="print-page">${buildBackHTML(card)}</div>
+    </div>
+  `).join('');
+  document.getElementById('printOverlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closePrintPreview() {
+  document.getElementById('printOverlay').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+function doPrint() {
+  window.print();
+}
+</script>
+</body>
+</html>
