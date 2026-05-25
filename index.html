@@ -744,6 +744,7 @@
     align-items: center;
     gap: 4px;
   }
+  .print-root { display: none; }
 
   @media print {
     html, body {
@@ -754,10 +755,9 @@
       overflow: visible !important;
       background: white !important;
     }
-    body > *:not(.print-overlay):not(.badge-print-overlay) { display: none !important; }
-    .print-overlay:not(.active)       { display: none !important; }
-    .badge-print-overlay:not(.active) { display: none !important; }
-    .print-overlay.active, .badge-print-overlay.active {
+    body > * { display: none !important; }
+    body.printing-postcard > #postcardPrintRoot,
+    body.printing-badge > #badgePrintRoot {
       display: block !important;
       position: static !important;
       inset: auto !important;
@@ -950,6 +950,9 @@
   </div>
   <div class="print-pages" id="badgePrintPages"></div>
 </div>
+
+<div class="print-root" id="postcardPrintRoot"></div>
+<div class="print-root" id="badgePrintRoot"></div>
 
 <footer class="site-footer">AI文创作品展 · AI 文创课 · 学员作品集</footer>
 
@@ -1214,6 +1217,30 @@ function openBadgePrint() {
   document.body.style.overflow = 'hidden';
 }
 
+function buildBadgePrintHTML() {
+  const posClasses = ['bap1','bap2','bap3','bap4','bap5','bap6'];
+  const groups = [];
+  for (let i = 0; i < badges.length; i += 6) groups.push(badges.slice(i, i + 6));
+  const totalPages = groups.length;
+
+  return groups.map((group, pi) => {
+    const badgesHTML = group.map((badge, pos) => `
+      <div class="badge-on-page ${posClasses[pos]}">
+        <img src="${badge.url}" alt="${badge.description}">
+      </div>
+    `).join('');
+    return `
+      <div class="badge-print-a4">
+        <div class="badge-corner-info">
+          <b>AI 文创作品展</b> ｜ 58mm 徽章 · A4 拼版 · 第 ${pi + 1} 张
+        </div>
+        ${badgesHTML}
+        <div class="badge-page-no">A4-${String(pi + 1).padStart(2,'0')} / 共 ${totalPages} 张</div>
+      </div>
+    `;
+  }).join('');
+}
+
 function closeBadgePrintPreview() {
   document.getElementById('badgePrintOverlay').classList.remove('active');
   document.body.style.overflow = '';
@@ -1221,6 +1248,8 @@ function closeBadgePrintPreview() {
 
 function doBadgePrint() {
   setPageSize('A4 portrait');
+  document.getElementById('badgePrintRoot').innerHTML = buildBadgePrintHTML();
+  document.body.classList.add('printing-badge');
   window.print();
 }
 
@@ -1278,12 +1307,20 @@ function closePrintPreview() {
 }
 function doPrint() {
   setPageSize('148mm 105mm');
+  document.getElementById('postcardPrintRoot').innerHTML = cards.map(card => `
+    <div class="print-page">${buildFrontHTML(card)}</div>
+    <div class="print-page">${buildBackHTML(card)}</div>
+  `).join('');
+  document.body.classList.add('printing-postcard');
   window.print();
 }
 
 /* ── Init ── */
 switchTab('badge');
 updateTabCounts();
+window.addEventListener('afterprint', () => {
+  document.body.classList.remove('printing-postcard', 'printing-badge');
+});
 </script>
 </body>
 </html>
