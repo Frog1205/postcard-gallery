@@ -746,12 +746,25 @@
   }
 
   @media print {
+    html, body {
+      margin: 0 !important;
+      padding: 0 !important;
+      width: auto !important;
+      height: auto !important;
+      overflow: visible !important;
+      background: white !important;
+    }
     body > *:not(.print-overlay):not(.badge-print-overlay) { display: none !important; }
     .print-overlay:not(.active)       { display: none !important; }
     .badge-print-overlay:not(.active) { display: none !important; }
     .print-overlay.active, .badge-print-overlay.active {
       display: block !important;
-      position: static;
+      position: static !important;
+      inset: auto !important;
+      width: auto !important;
+      height: auto !important;
+      max-height: none !important;
+      overflow: visible !important;
       background: none;
       backdrop-filter: none;
       -webkit-print-color-adjust: exact;
@@ -759,11 +772,17 @@
     }
     .print-toolbar { display: none !important; }
     /* postcard */
-    .print-pages { padding: 0; gap: 0; }
+    .print-pages {
+      padding: 0 !important;
+      gap: 0 !important;
+      overflow: visible !important;
+    }
     .print-pair { gap: 0; }
     .print-page-label { display: none !important; }
     .print-page {
       box-shadow: none;
+      margin: 0 !important;
+      overflow: hidden !important;
       page-break-after: always;
       page-break-inside: avoid;
       width: 148mm; height: 105mm;
