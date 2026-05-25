@@ -572,7 +572,21 @@
     box-shadow: 0 2px 12px rgba(0,0,0,0.2);
   }
   .print-toolbar h3 { color: var(--red); font-size: 1.1rem; letter-spacing: 1px; }
-  .print-toolbar-btns { display: flex; gap: 10px; }
+  .print-toolbar-btns { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .print-range {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text);
+    font-size: 0.85rem;
+  }
+  .print-range input {
+    width: 64px;
+    padding: 7px 8px;
+    border: 1px solid #D8CCAA;
+    border-radius: 6px;
+    font: inherit;
+  }
   .print-toolbar .pt-btn {
     padding: 8px 24px;
     border: none;
@@ -610,6 +624,17 @@
     margin-bottom: 4px;
     text-align: center;
   }
+  .print-summary {
+    width: min(148mm, calc(100vw - 40px));
+    padding: 12px 16px;
+    color: white;
+    background: rgba(0,0,0,0.35);
+    border-radius: 6px;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    text-align: center;
+  }
+  .print-summary b { color: #FFE3A3; }
   .print-pair { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 
   /* Postcard front/back print */
@@ -658,7 +683,7 @@
     flex: 1;
     background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 7mm, #E8D9B0 7mm, #E8D9B0 7.2mm);
   }
-  .prt-msg-foot { font-size: 7.5pt; color: #8A7B5C; text-align: right; margin-top: 1mm; font-style: italic; }
+  .prt-msg-foot { font-size: 8.5pt; color: #8A7B5C; text-align: right; margin-top: 2mm; font-style: italic; line-height: 1.2; }
   .prt-addr-area { padding-left: 4mm; display: flex; flex-direction: column; position: relative; }
   .prt-stamp {
     position: absolute; top: 0; right: 0;
@@ -671,13 +696,13 @@
   }
   .prt-to-label { font-size: 10pt; color: #B8332C; font-weight: 700; margin-bottom: 2mm; letter-spacing: 1px; }
   .prt-addr-lines {
-    margin-top: 18mm; flex: 1;
+    margin-top: 16mm; flex: 1;
     background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 8mm, #C9B98F 8mm, #C9B98F 8.2mm);
-    max-height: 50mm;
+    max-height: 38mm;
   }
-  .prt-postcode { margin-top: 2mm; display: flex; gap: 1.2mm; }
+  .prt-postcode { margin-top: 5mm; display: flex; gap: 1.2mm; }
   .prt-postcode .prt-box { width: 7mm; height: 9mm; border: 1px solid #B8332C; border-radius: 0.5mm; }
-  .prt-course-foot { margin-top: auto; padding-top: 2mm; font-size: 7pt; color: #8A7B5C; text-align: right; letter-spacing: 0.5px; }
+  .prt-course-foot { margin-top: auto; padding-top: 2mm; font-size: 8.5pt; color: #8A7B5C; text-align: right; letter-spacing: 0.2px; line-height: 1.2; font-style: italic; }
 
   /* ── Postcard @page & print ── */
   /* ── Badge Print Overlay ── */
@@ -914,7 +939,6 @@
     </div>
     <div class="lb-back-preview">
       <div class="lb-msg-area">
-        <div class="lb-msg-title">寄语 · TO ___________</div>
         <div class="lb-msg-lines"></div>
       </div>
       <div class="lb-back-divider"></div>
@@ -932,8 +956,16 @@
   <div class="print-toolbar">
     <h3>明信片打印预览</h3>
     <div class="print-toolbar-btns">
+      <label class="print-range">
+        范围
+        <input type="number" id="printStart" min="1" value="1">
+        -
+        <input type="number" id="printEnd" min="1" value="10">
+      </label>
       <button class="pt-btn pt-btn-close" onclick="closePrintPreview()">返回</button>
-      <button class="pt-btn pt-btn-print" onclick="doPrint()">打印</button>
+      <button class="pt-btn pt-btn-print" id="btnExportPdf" onclick="exportPdf()">直接导出PDF</button>
+      <button class="pt-btn pt-btn-print" id="btnExportPdf2Up" onclick="exportPdf2Up()">节省导出PDF(2合1)</button>
+      <button class="pt-btn pt-btn-print" id="btnDoPrint" onclick="doPrint()">打印</button>
     </div>
   </div>
   <div class="print-pages" id="printPages"></div>
@@ -961,6 +993,7 @@ let cards   = [];   // postcard images
 let badges  = [];   // badge images
 let currentLbIndex = -1;
 let currentTab = 'badge';
+let printDocumentUrls = [];
 
 /* ── Filename Parser ── */
 function parseFilename(name) {
@@ -1016,7 +1049,7 @@ async function scanBadgeFolder() {
       const file = await entry.getFile();
       const url  = URL.createObjectURL(file);
       const parsed = parseFilename(entry.name);
-      badges.push({ filename: entry.name, url, description: parsed.description, number: parsed.number, size: file.size });
+      badges.push({ filename: entry.name, file, url, description: parsed.description, number: parsed.number, size: file.size });
     }
     badges.sort((a, b) => {
       if (a.description !== b.description) return a.description.localeCompare(b.description, 'zh');
@@ -1048,11 +1081,14 @@ async function scanPostcardFolder() {
       const file = await entry.getFile();
       const url  = URL.createObjectURL(file);
       const parsed = parseFilename(entry.name);
-      cards.push({ filename: entry.name, url, description: parsed.description, number: parsed.number, size: file.size });
+      cards.push({ filename: entry.name, file, url, description: parsed.description, number: parsed.number, size: file.size });
     }
     cards.sort((a, b) => {
       if (a.description !== b.description) return a.description.localeCompare(b.description, 'zh');
       return a.number - b.number;
+    });
+    cards.forEach((card, index) => {
+      card.printCode = 'PC-' + String(index + 1).padStart(3, '0');
     });
     renderGallery();
     document.getElementById('btnPrint').disabled = cards.length === 0;
@@ -1217,10 +1253,10 @@ function openBadgePrint() {
   document.body.style.overflow = 'hidden';
 }
 
-function buildBadgePrintHTML() {
+function buildBadgePrintHTML(printBadges = badges) {
   const posClasses = ['bap1','bap2','bap3','bap4','bap5','bap6'];
   const groups = [];
-  for (let i = 0; i < badges.length; i += 6) groups.push(badges.slice(i, i + 6));
+  for (let i = 0; i < printBadges.length; i += 6) groups.push(printBadges.slice(i, i + 6));
   const totalPages = groups.length;
 
   return groups.map((group, pi) => {
@@ -1246,11 +1282,72 @@ function closeBadgePrintPreview() {
   document.body.style.overflow = '';
 }
 
-function doBadgePrint() {
-  setPageSize('A4 portrait');
-  document.getElementById('badgePrintRoot').innerHTML = buildBadgePrintHTML();
-  document.body.classList.add('printing-badge');
-  window.print();
+function imageBitmapToPrintDataURL(bitmap, maxWidth = 1800, maxHeight = 1280, quality = 0.88) {
+  const scale = Math.min(1, maxWidth / bitmap.width, maxHeight / bitmap.height);
+  const width = Math.max(1, Math.round(bitmap.width * scale));
+  const height = Math.max(1, Math.round(bitmap.height * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, width, height);
+  ctx.drawImage(bitmap, 0, 0, width, height);
+  return canvas.toDataURL('image/jpeg', quality);
+}
+
+async function fileToPrintDataURL(file) {
+  if (window.createImageBitmap) {
+    const bitmap = await createImageBitmap(file);
+    const dataURL = imageBitmapToPrintDataURL(bitmap);
+    if (bitmap.close) bitmap.close();
+    return dataURL;
+  }
+
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = reject;
+      image.src = url;
+    });
+    return imageBitmapToPrintDataURL(img);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+async function preparePrintImages(items, onProgress) {
+  const prepared = [];
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    if (onProgress) onProgress(i + 1, items.length);
+    if (!item.file) {
+      prepared.push(item);
+    } else {
+      prepared.push({ ...item, url: await fileToPrintDataURL(item.file) });
+    }
+  }
+  return prepared;
+}
+
+async function doBadgePrint() {
+  const printWin = openPreparingWindow('徽章打印');
+  if (!printWin) return;
+  try {
+    const printableBadges = await preparePrintImages(badges);
+    openPrintDocument(
+      '徽章打印',
+      getBadgePrintCSS(),
+      buildBadgePrintHTML(printableBadges),
+      '<h1>徽章打印准备</h1><p>打印设置建议：<b>A4</b>、纵向、边距无、缩放 100%、勾选背景图形。</p>',
+      printWin
+    );
+  } catch (e) {
+    console.error(e);
+    printWin.document.body.innerHTML = '<p style="font-family:sans-serif;padding:24px;">准备打印图片失败，请关闭本页后重新选择文件夹再试。</p>';
+  }
 }
 
 
@@ -1263,16 +1360,15 @@ function buildFrontHTML(card) {
       <span class="prt-flag">
         <span class="fb1"></span><span class="fb2"></span><span class="fb3"></span><span class="fb4"></span><span class="fb5"></span>
       </span>
-      <span>No.${card.number || '#'} / 2026</span>
+      <span>${card.printCode || '#'} · #2026</span>
     </div>
   </div>`;
 }
 function buildBackHTML(card) {
   return `<div class="prt-back">
     <div class="prt-msg-area">
-      <div class="prt-msg-title">寄语 · TO ___________</div>
       <div class="prt-msg-lines"></div>
-      <div class="prt-msg-foot">—— ${card.description} · No.${card.number || '#'}</div>
+      <div class="prt-msg-foot">—— ${card.description} · ${card.printCode || '#'}</div>
     </div>
     <div class="prt-back-divider"></div>
     <div class="prt-addr-area">
@@ -1287,10 +1383,780 @@ function buildBackHTML(card) {
     </div>
   </div>`;
 }
+
+function getPostcardPrintCSS() {
+  return `
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      min-height: 100%;
+      margin: 0;
+      padding: 0;
+      background: #E5E7EB;
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      color: #4A3F35;
+    }
+    .fb1 { background: #2C5F8D; }
+    .fb2 { background: #FFFFFF; }
+    .fb3 { background: #B8332C; }
+    .fb4 { background: #2E7D4A; }
+    .fb5 { background: #E8A02C; }
+    .print-shell {
+      min-height: 100vh;
+      padding: 24px 24px 48px;
+    }
+    .print-guide {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      margin: -24px -24px 24px;
+      padding: 14px 24px;
+      background: #FFF8E7;
+      border-bottom: 1px solid #D8CCAA;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .print-guide h1 {
+      color: #B8332C;
+      font-size: 18px;
+      margin-bottom: 4px;
+    }
+    .print-guide p {
+      font-size: 13px;
+      line-height: 1.5;
+      color: #6F5D45;
+    }
+    .print-guide b { color: #7A4A1A; }
+    .print-guide button {
+      border: 0;
+      border-radius: 6px;
+      background: #B8332C;
+      color: white;
+      padding: 10px 22px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .print-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+    .print-page {
+      width: 148mm;
+      height: 105mm;
+      background: white;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.20);
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .prt-front {
+      width: 148mm;
+      height: 105mm;
+      background: #FFF8E7;
+      padding: 4mm;
+      display: flex;
+      flex-direction: column;
+    }
+    .prt-front-image {
+      flex: 1;
+      background-color: #E8DFC7;
+      border: 1px solid #E8A02C;
+      border-radius: 2mm;
+      overflow: hidden;
+      position: relative;
+    }
+    .prt-front-image img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .prt-front-strip {
+      margin-top: 2mm;
+      height: 6mm;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2mm;
+      font-size: 8pt;
+      color: #7A4A1A;
+    }
+    .prt-front-strip .prt-title {
+      max-width: 68mm;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 700;
+      color: #B8332C;
+    }
+    .prt-front-strip .prt-flag {
+      display: flex;
+      height: 3mm;
+      width: 30mm;
+      border-radius: 1mm;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .prt-front-strip .prt-flag span { flex: 1; }
+    .prt-back {
+      width: 148mm;
+      height: 105mm;
+      background: #FFFBF0;
+      padding: 5mm 6mm;
+      display: grid;
+      grid-template-columns: 1fr 1px 1fr;
+    }
+    .prt-back-divider { background: #E8A02C; width: 1px; }
+    .prt-msg-area { padding-right: 4mm; display: flex; flex-direction: column; }
+    .prt-msg-title { color: #B8332C; font-size: 10pt; font-weight: 700; margin-bottom: 2mm; }
+    .prt-msg-lines {
+      flex: 1;
+      background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 7mm, #E8D9B0 7mm, #E8D9B0 7.2mm);
+    }
+    .prt-msg-foot { font-size: 8.5pt; color: #8A7B5C; text-align: right; margin-top: 2mm; font-style: italic; line-height: 1.2; }
+    .prt-addr-area { padding-left: 4mm; display: flex; flex-direction: column; position: relative; }
+    .prt-stamp {
+      position: absolute; top: 0; right: 0;
+      width: 22mm; height: 28mm;
+      border: 1.5px dashed #B8332C;
+      color: #B8332C;
+      font-size: 7pt;
+      display: flex; align-items: center; justify-content: center;
+      text-align: center; line-height: 1.4; border-radius: 1mm;
+    }
+    .prt-to-label { font-size: 10pt; color: #B8332C; font-weight: 700; margin-bottom: 2mm; }
+    .prt-addr-lines {
+      margin-top: 16mm; flex: 1;
+      background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 8mm, #C9B98F 8mm, #C9B98F 8.2mm);
+      max-height: 38mm;
+    }
+    .prt-postcode { margin-top: 5mm; display: flex; gap: 1.2mm; }
+    .prt-postcode .prt-box { width: 7mm; height: 9mm; border: 1px solid #B8332C; border-radius: 0.5mm; }
+    .prt-course-foot { margin-top: auto; padding-top: 2mm; font-size: 8.5pt; color: #8A7B5C; text-align: right; line-height: 1.2; font-style: italic; }
+    @media print {
+      @page { size: 148mm 105mm; margin: 0; }
+      html, body {
+        width: 148mm;
+        height: auto;
+        background: white;
+      }
+      .print-shell {
+        min-height: 0;
+        padding: 0;
+      }
+      .print-guide { display: none !important; }
+      .print-content {
+        display: block;
+      }
+      .print-page {
+        width: 148mm;
+        height: 105mm;
+        box-shadow: none;
+        break-after: page;
+        page-break-after: always;
+      }
+      .print-page:last-child { break-after: auto; page-break-after: auto; }
+    }
+  `;
+}
+
+function getBadgePrintCSS() {
+  return `
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      min-height: 100%;
+      margin: 0;
+      padding: 0;
+      background: #E5E7EB;
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      color: #4A3F35;
+    }
+    .print-shell {
+      min-height: 100vh;
+      padding: 24px 24px 48px;
+    }
+    .print-guide {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      margin: -24px -24px 24px;
+      padding: 14px 24px;
+      background: #FFF8E7;
+      border-bottom: 1px solid #D8CCAA;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .print-guide h1 {
+      color: #2C5F8D;
+      font-size: 18px;
+      margin-bottom: 4px;
+    }
+    .print-guide p {
+      font-size: 13px;
+      line-height: 1.5;
+      color: #6F5D45;
+    }
+    .print-guide b { color: #7A4A1A; }
+    .print-guide button {
+      border: 0;
+      border-radius: 6px;
+      background: #2C5F8D;
+      color: white;
+      padding: 10px 22px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .print-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+    .badge-print-a4 {
+      width: 210mm;
+      height: 297mm;
+      background: white;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.20);
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .badge-on-page {
+      position: absolute;
+      width: 75mm;
+      height: 75mm;
+      border-radius: 50%;
+      overflow: hidden;
+      background-color: #E8DFC7;
+      border: 0.4mm dashed #B8332C;
+    }
+    .badge-on-page img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .bap1 { left: 27.5mm; top: 31mm; }
+    .bap2 { left: 107.5mm; top: 31mm; }
+    .bap3 { left: 27.5mm; top: 111mm; }
+    .bap4 { left: 107.5mm; top: 111mm; }
+    .bap5 { left: 27.5mm; top: 191mm; }
+    .bap6 { left: 107.5mm; top: 191mm; }
+    .badge-corner-info {
+      position: absolute;
+      top: 6mm; left: 6mm;
+      font-size: 8pt; color: #8A7B5C;
+    }
+    .badge-corner-info b { color: #B8332C; }
+    .badge-page-no {
+      position: absolute;
+      bottom: 6mm; right: 8mm;
+      font-size: 8pt; color: #8A7B5C;
+    }
+    @media print {
+      @page { size: A4 portrait; margin: 0; }
+      html, body {
+        width: 210mm;
+        height: auto;
+        background: white;
+      }
+      .print-shell {
+        min-height: 0;
+        padding: 0;
+      }
+      .print-guide { display: none !important; }
+      .print-content {
+        display: block;
+      }
+      .badge-print-a4 {
+        width: 210mm;
+        height: 297mm;
+        box-shadow: none;
+        break-after: page;
+        page-break-after: always;
+      }
+      .badge-print-a4:last-child { break-after: auto; page-break-after: auto; }
+    }
+  `;
+}
+
+function openPreparingWindow(title) {
+  const printWin = window.open('', '_blank');
+  if (!printWin) {
+    alert('浏览器拦截了打印窗口，请允许弹出窗口后重试。');
+    return null;
+  }
+  printWin.document.open();
+  printWin.document.write(`<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><title>${title}</title></head>
+<body style="margin:0;background:#E5E7EB;font-family:sans-serif;color:#4A3F35;">
+  <div style="padding:28px;font-size:16px;">正在准备打印图片...</div>
+</body>
+</html>`);
+  printWin.document.close();
+  return printWin;
+}
+
+function openPrintDocument(title, css, bodyHTML, guideHTML, targetWindow) {
+  const printWin = targetWindow || openPreparingWindow(title);
+  if (!printWin) return;
+  const html = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>${title}</title>
+<style>${css}</style>
+</head>
+<body>
+<div class="print-shell">
+  <div class="print-guide">
+    <div>${guideHTML}</div>
+    <button id="startPrintBtn" onclick="startPrint()">开始打印</button>
+  </div>
+  <div class="print-content">
+    ${bodyHTML}
+  </div>
+</div>
+<script>
+  function waitForImages() {
+    return Promise.all(Array.from(document.images).map(function(img, index) {
+      if (img.complete && img.naturalWidth > 0) return Promise.resolve(null);
+      return new Promise(function(resolve) {
+        img.onload = function() { resolve(null); };
+        img.onerror = function() { resolve(index + 1); };
+      });
+    })).then(function(results) {
+      return results.filter(Boolean);
+    });
+  }
+  function startPrint() {
+    var btn = document.getElementById('startPrintBtn');
+    btn.disabled = true;
+    btn.textContent = '图片加载中...';
+    waitForImages().then(function(failedImages) {
+      if (failedImages.length > 0) {
+        btn.textContent = '开始打印';
+        btn.disabled = false;
+        alert('有 ' + failedImages.length + ' 张图片没有加载完成，请关闭本页后重新生成打印页。');
+        return;
+      }
+      btn.textContent = '开始打印';
+      btn.disabled = false;
+      window.focus();
+      window.print();
+    });
+  }
+  window.addEventListener('load', function() { window.focus(); });
+<\/script>
+</body>
+</html>`;
+  const url = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }));
+  printDocumentUrls.push(url);
+  if (printDocumentUrls.length > 4) {
+    URL.revokeObjectURL(printDocumentUrls.shift());
+  }
+  printWin.location.replace(url);
+}
+
+function getPrintRangeCards() {
+  const startInput = document.getElementById('printStart');
+  const endInput = document.getElementById('printEnd');
+  const start = Math.max(1, parseInt(startInput.value, 10) || 1);
+  const end = Math.min(cards.length, parseInt(endInput.value, 10) || cards.length);
+  const from = Math.min(start, end);
+  const to = Math.max(start, end);
+  startInput.value = from;
+  endInput.value = to;
+  return { from, to, selected: cards.slice(from - 1, to) };
+}
+
+function buildPostcardPrintHTML(selectedCards) {
+  return selectedCards.map(card => `
+    <div class="print-page">${buildFrontHTML(card)}</div>
+    <div class="print-page">${buildBackHTML(card)}</div>
+  `).join('');
+}
+
+function loadImageForCanvas(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+function drawCoverImage(ctx, img, x, y, w, h) {
+  const scale = Math.max(w / img.width, h / img.height);
+  const sw = w / scale;
+  const sh = h / scale;
+  const sx = (img.width - sw) / 2;
+  const sy = (img.height - sh) / 2;
+  ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+}
+
+function roundedRectPath(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function canvasToJpegBytes(canvas, quality = 0.88) {
+  const dataUrl = canvas.toDataURL('image/jpeg', quality);
+  const base64 = dataUrl.split(',')[1];
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+function jpegBytesToDataURL(bytes) {
+  let binary = '';
+  const chunkSize = 8192;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, i + chunkSize);
+    binary += String.fromCharCode.apply(null, chunk);
+  }
+  return 'data:image/jpeg;base64,' + btoa(binary);
+}
+
+async function renderFrontPage(card) {
+  const pxPerMm = 300 / 25.4;
+  const width = Math.round(148 * pxPerMm);
+  const height = Math.round(105 * pxPerMm);
+  const mm = pxPerMm;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  const img = await loadImageForCanvas(card.url);
+
+  ctx.fillStyle = '#FFF8E7';
+  ctx.fillRect(0, 0, width, height);
+
+  const margin = 4 * mm;
+  const stripH = 8 * mm;
+  const gap = 2 * mm;
+  const imageX = margin;
+  const imageY = margin;
+  const imageW = width - margin * 2;
+  const imageH = height - margin * 2 - stripH - gap;
+  const radius = 2 * mm;
+
+  ctx.save();
+  roundedRectPath(ctx, imageX, imageY, imageW, imageH, radius);
+  ctx.clip();
+  drawCoverImage(ctx, img, imageX, imageY, imageW, imageH);
+  ctx.restore();
+
+  ctx.strokeStyle = '#E8A02C';
+  ctx.lineWidth = 1.4;
+  roundedRectPath(ctx, imageX, imageY, imageW, imageH, radius);
+  ctx.stroke();
+
+  const stripY = imageY + imageH + gap;
+  ctx.fillStyle = '#B8332C';
+  ctx.font = 'bold 25px "Microsoft YaHei", sans-serif';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(card.description, margin + 2 * mm, stripY + stripH / 2, 70 * mm);
+
+  const barW = 30 * mm;
+  const barH = 3 * mm;
+  const barX = (width - barW) / 2;
+  const barY = stripY + (stripH - barH) / 2;
+  ['#2C5F8D', '#FFFFFF', '#B8332C', '#2E7D4A', '#E8A02C'].forEach((color, i) => {
+    ctx.fillStyle = color;
+    ctx.fillRect(barX + i * barW / 5, barY, barW / 5, barH);
+  });
+
+  ctx.fillStyle = '#7A4A1A';
+  ctx.font = '23px "Microsoft YaHei", sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText((card.printCode || '#') + ' · #2026', width - margin - 2 * mm, stripY + stripH / 2);
+
+  return canvasToJpegBytes(canvas);
+}
+
+function drawDashedRect(ctx, x, y, w, h, dash, color) {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.setLineDash(dash);
+  ctx.strokeRect(x, y, w, h);
+  ctx.restore();
+}
+
+async function renderBackPage(card) {
+  const pxPerMm = 300 / 25.4;
+  const width = Math.round(148 * pxPerMm);
+  const height = Math.round(105 * pxPerMm);
+  const mm = pxPerMm;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#FFFBF0';
+  ctx.fillRect(0, 0, width, height);
+
+  const left = 6 * mm;
+  const top = 5 * mm;
+  const bottom = height - 5 * mm;
+  const midX = width / 2;
+
+  ctx.strokeStyle = '#E8A02C';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(midX, top);
+  ctx.lineTo(midX, bottom);
+  ctx.stroke();
+
+  ctx.strokeStyle = '#E8D9B0';
+  ctx.lineWidth = 1.5;
+  for (let y = top + 12 * mm; y < bottom - 10 * mm; y += 7 * mm) {
+    ctx.beginPath();
+    ctx.moveTo(left, y);
+    ctx.lineTo(midX - 4 * mm, y);
+    ctx.stroke();
+  }
+
+  const rightX = midX + 4 * mm;
+  ctx.fillStyle = '#B8332C';
+  ctx.font = 'bold 32px "Microsoft YaHei", sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('TO · 寄给谁', rightX, top + 6 * mm);
+
+  const stampW = 22 * mm;
+  const stampH = 28 * mm;
+  const stampX = width - 6 * mm - stampW;
+  const stampY = top;
+  drawDashedRect(ctx, stampX, stampY, stampW, stampH, [6, 4], '#B8332C');
+  ctx.font = '22px "Microsoft YaHei", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('邮票', stampX + stampW / 2, stampY + stampH / 2 - 5);
+  ctx.fillText('STAMP', stampX + stampW / 2, stampY + stampH / 2 + 18);
+
+  ctx.strokeStyle = '#C9B98F';
+  ctx.lineWidth = 1.5;
+  for (let y = top + 32 * mm; y < bottom - 31 * mm; y += 8 * mm) {
+    ctx.beginPath();
+    ctx.moveTo(rightX, y);
+    ctx.lineTo(width - 6 * mm, y);
+    ctx.stroke();
+  }
+
+  const boxSize = 7 * mm;
+  const boxGap = 1.2 * mm;
+  const postcodeY = bottom - 20 * mm;
+  ctx.strokeStyle = '#B8332C';
+  ctx.lineWidth = 2;
+  for (let i = 0; i < 6; i++) {
+    ctx.strokeRect(rightX + i * (boxSize + boxGap), postcodeY, boxSize, 9 * mm);
+  }
+
+  ctx.fillStyle = '#8A7B5C';
+  ctx.font = 'italic 22px "Microsoft YaHei", sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText('AI 文创课 · 明信片作品 · 2026', width - 6 * mm, bottom - 3 * mm);
+
+  ctx.font = 'italic 22px "Microsoft YaHei", sans-serif';
+  ctx.fillText('—— ' + card.description + ' · ' + (card.printCode || '#'), midX - 4 * mm, bottom - 3 * mm);
+
+  return canvasToJpegBytes(canvas);
+}
+
+async function buildPdfBytesForCards(selectedCards, onProgress) {
+  const pageImages = [];
+  for (let i = 0; i < selectedCards.length; i++) {
+    const card = selectedCards[i];
+    if (onProgress) onProgress(i + 1, selectedCards.length, '正面');
+    pageImages.push(await renderFrontPage(card));
+    if (onProgress) onProgress(i + 1, selectedCards.length, '背面');
+    pageImages.push(await renderBackPage(card));
+  }
+  return buildImagePdf(pageImages, 148 * 72 / 25.4, 105 * 72 / 25.4);
+}
+
+async function renderTwoUpSheet(leftBytes, rightBytes) {
+  const pxPerMm = 300 / 25.4;
+  const sheetW = Math.round(210 * pxPerMm);
+  const sheetH = Math.round(148 * pxPerMm);
+  const slotW = sheetW / 2;
+  const canvas = document.createElement('canvas');
+  canvas.width = sheetW;
+  canvas.height = sheetH;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, sheetW, sheetH);
+
+  const drawSlot = async (bytes, slotIndex) => {
+    if (!bytes) return;
+    const img = await loadImageForCanvas(jpegBytesToDataURL(bytes));
+    const slotX = slotIndex * slotW;
+    ctx.save();
+    ctx.translate(slotX + slotW, 0);
+    ctx.rotate(Math.PI / 2);
+    ctx.drawImage(img, 0, 0, sheetH, slotW);
+    ctx.restore();
+  };
+
+  await drawSlot(leftBytes, 0);
+  await drawSlot(rightBytes, 1);
+
+  ctx.strokeStyle = '#C9B98F';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([10, 8]);
+  ctx.beginPath();
+  ctx.moveTo(slotW, 0);
+  ctx.lineTo(slotW, sheetH);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  return canvasToJpegBytes(canvas, 0.9);
+}
+
+async function buildTwoUpPdfBytesForCards(selectedCards, onProgress) {
+  const sheetImages = [];
+  for (let i = 0; i < selectedCards.length; i += 2) {
+    const left = selectedCards[i];
+    const right = selectedCards[i + 1];
+    const pairNo = Math.floor(i / 2) + 1;
+    const pairTotal = Math.ceil(selectedCards.length / 2);
+
+    if (onProgress) onProgress(pairNo, pairTotal, '正面');
+    const leftFront = await renderFrontPage(left);
+    const rightFront = right ? await renderFrontPage(right) : null;
+    sheetImages.push(await renderTwoUpSheet(leftFront, rightFront));
+
+    if (onProgress) onProgress(pairNo, pairTotal, '背面');
+    const leftBack = await renderBackPage(left);
+    const rightBack = right ? await renderBackPage(right) : null;
+    sheetImages.push(await renderTwoUpSheet(leftBack, rightBack));
+  }
+  return buildImagePdf(sheetImages, 210 * 72 / 25.4, 148 * 72 / 25.4, Math.round(210 * 300 / 25.4), Math.round(148 * 300 / 25.4));
+}
+
+function pdfText(str) {
+  return str.replace(/[\\()]/g, '\\$&');
+}
+
+function buildImagePdf(imageBytesList, pageW, pageH, imageW = Math.round(148 * 300 / 25.4), imageH = Math.round(105 * 300 / 25.4)) {
+  const objects = [];
+  const addObject = content => {
+    objects.push(content);
+    return objects.length;
+  };
+
+  const catalogId = addObject('<< /Type /Catalog /Pages 2 0 R >>');
+  const pagesId = addObject('');
+  const pageIds = [];
+
+  imageBytesList.forEach((jpegBytes, index) => {
+    const imageId = addObject({
+      bytes: jpegBytes,
+      dict: `<< /Type /XObject /Subtype /Image /Width ${imageW} /Height ${imageH} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpegBytes.length} >>`
+    });
+    const content = `q\n${pageW.toFixed(3)} 0 0 ${pageH.toFixed(3)} 0 0 cm\n/Im${index + 1} Do\nQ\n`;
+    const contentBytes = new TextEncoder().encode(content);
+    const contentId = addObject({
+      bytes: contentBytes,
+      dict: `<< /Length ${contentBytes.length} >>`
+    });
+    const pageId = addObject(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${pageW.toFixed(3)} ${pageH.toFixed(3)}] /Resources << /XObject << /Im${index + 1} ${imageId} 0 R >> >> /Contents ${contentId} 0 R >>`);
+    pageIds.push(pageId);
+  });
+
+  objects[pagesId - 1] = `<< /Type /Pages /Count ${pageIds.length} /Kids [${pageIds.map(id => id + ' 0 R').join(' ')}] >>`;
+
+  const chunks = [];
+  const offsets = [0];
+  let position = 0;
+  const pushString = text => {
+    const bytes = new TextEncoder().encode(text);
+    chunks.push(bytes);
+    position += bytes.length;
+  };
+  const pushBytes = bytes => {
+    chunks.push(bytes);
+    position += bytes.length;
+  };
+
+  pushString('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+  objects.forEach((obj, i) => {
+    offsets[i + 1] = position;
+    pushString(`${i + 1} 0 obj\n`);
+    if (typeof obj === 'string') {
+      pushString(obj + '\n');
+    } else {
+      pushString(obj.dict + '\nstream\n');
+      pushBytes(obj.bytes);
+      pushString('\nendstream\n');
+    }
+    pushString('endobj\n');
+  });
+
+  const xrefOffset = position;
+  pushString(`xref\n0 ${objects.length + 1}\n`);
+  pushString('0000000000 65535 f \n');
+  for (let i = 1; i <= objects.length; i++) {
+    pushString(String(offsets[i]).padStart(10, '0') + ' 00000 n \n');
+  }
+  pushString(`trailer\n<< /Size ${objects.length + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`);
+
+  const total = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+  const result = new Uint8Array(total);
+  let offset = 0;
+  chunks.forEach(chunk => {
+    result.set(chunk, offset);
+    offset += chunk.length;
+  });
+  return result;
+}
+
+function downloadBytes(bytes, filename, mimeType) {
+  const blob = new Blob([bytes], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 function openPrintPreview() {
   if (cards.length === 0) return;
+  const previewLimit = 3;
+  const previewCards = cards.slice(0, previewLimit);
   const container = document.getElementById('printPages');
-  container.innerHTML = cards.map((card, i) => `
+  const endInput = document.getElementById('printEnd');
+  endInput.max = cards.length;
+  endInput.value = Math.min(10, cards.length);
+  document.getElementById('printStart').max = cards.length;
+  const summary = cards.length > previewLimit
+    ? `<div class="print-summary">预览仅显示前 ${previewLimit} 张样张。为加快打印预览，默认只打印 <b>1-${Math.min(10, cards.length)}</b> 张；可在右上角改范围分批打印。全部 ${cards.length} 张共 ${cards.length * 2} 页。</div>`
+    : '';
+  container.innerHTML = summary + previewCards.map((card, i) => `
     <div class="print-pair">
       <span class="print-page-label">第 ${i + 1} 张 ·「${card.description}」· 正面</span>
       <div class="print-page">${buildFrontHTML(card)}</div>
@@ -1305,14 +2171,84 @@ function closePrintPreview() {
   document.getElementById('printOverlay').classList.remove('active');
   document.body.style.overflow = '';
 }
-function doPrint() {
-  setPageSize('148mm 105mm');
-  document.getElementById('postcardPrintRoot').innerHTML = cards.map(card => `
-    <div class="print-page">${buildFrontHTML(card)}</div>
-    <div class="print-page">${buildBackHTML(card)}</div>
-  `).join('');
-  document.body.classList.add('printing-postcard');
-  window.print();
+async function doPrint() {
+  const range = getPrintRangeCards();
+  if (range.selected.length === 0) return;
+  const printWin = openPreparingWindow('明信片打印 ' + range.from + '-' + range.to);
+  if (!printWin) return;
+  const btn = document.getElementById('btnDoPrint');
+  const oldText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '准备中...';
+  try {
+    const printableCards = await preparePrintImages(range.selected, (current, total) => {
+      btn.textContent = '准备中 ' + current + '/' + total;
+    });
+    openPrintDocument(
+      '明信片打印 ' + range.from + '-' + range.to,
+      getPostcardPrintCSS(),
+      buildPostcardPrintHTML(printableCards),
+      '<h1>明信片打印准备</h1><p>本页是 <b>A6 明信片实际尺寸 148mm x 105mm</b>。点“开始打印”后，请在浏览器打印设置中选择：纸张尺寸 <b>A6</b>、横向、边距无、缩放 100%、勾选背景图形。若选择 A4，明信片会按真实 A6 尺寸显示在 A4 纸中间，看起来会变小。</p>',
+      printWin
+    );
+  } catch (e) {
+    console.error(e);
+    printWin.document.body.innerHTML = '<p style="font-family:sans-serif;padding:24px;">准备打印图片失败，请关闭本页后重新选择文件夹再试。</p>';
+    alert('准备打印图片失败，请重新选择文件夹后再试。');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = oldText;
+  }
+}
+
+async function exportPdf() {
+  const range = getPrintRangeCards();
+  if (range.selected.length === 0) return;
+  const btn = document.getElementById('btnExportPdf');
+  const oldText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '生成中...';
+  try {
+    const printableCards = await preparePrintImages(range.selected, (current, total) => {
+      btn.textContent = '处理图片 ' + current + '/' + total;
+    });
+    const pdfBytes = await buildPdfBytesForCards(printableCards, (current, total, side) => {
+      btn.textContent = '生成PDF ' + current + '/' + total + ' ' + side;
+    });
+    const filename = '明信片-' + range.from + '-' + range.to + '.pdf';
+    downloadBytes(pdfBytes, filename, 'application/pdf');
+  } catch (e) {
+    console.error(e);
+    alert('生成 PDF 失败，请缩小范围后重试。');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = oldText;
+  }
+}
+
+async function exportPdf2Up() {
+  const range = getPrintRangeCards();
+  if (range.selected.length === 0) return;
+  const btn = document.getElementById('btnExportPdf2Up');
+  const oldText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '生成中...';
+  try {
+    const printableCards = await preparePrintImages(range.selected, (current, total) => {
+      btn.textContent = '处理图片 ' + current + '/' + total;
+    });
+    const pdfBytes = await buildTwoUpPdfBytesForCards(printableCards, (current, total, side) => {
+      btn.textContent = '拼版PDF ' + current + '/' + total + ' ' + side;
+    });
+    const filename = '明信片-节省2合1-' + range.from + '-' + range.to + '.pdf';
+    downloadBytes(pdfBytes, filename, 'application/pdf');
+  } catch (e) {
+    console.error(e);
+    alert('生成节省打印 PDF 失败，请缩小范围后重试。');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = oldText;
+  }
 }
 
 /* ── Init ── */
