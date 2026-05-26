@@ -1,0 +1,7 @@
+interface:
+  display_name: "Chengdu Theme Park Tycoon"
+  short_description: "Build a low-poly Web3D Chengdu theme park tycoon simulation."
+  brand_color: "#2F8F5B"
+  default_prompt: "Use $chengdu-theme-park-tycoon to create a playable low-poly Web3D theme park simulation."
+policy:
+  allow_implicit_invocation: true
