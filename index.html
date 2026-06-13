@@ -977,6 +977,7 @@
     <h3>徽章打印预览（A4 · 每页 6 枚 58mm）</h3>
     <div class="print-toolbar-btns">
       <button class="pt-btn pt-btn-close" onclick="closeBadgePrintPreview()">返回</button>
+      <button class="pt-btn pt-btn-print" id="btnExportBadgePdf" style="background:var(--blue);" onclick="exportBadgePdf()">导出PDF</button>
       <button class="pt-btn pt-btn-print" style="background:var(--blue);" onclick="doBadgePrint()">打印</button>
     </div>
   </div>
@@ -2195,6 +2196,112 @@ async function doPrint() {
     console.error(e);
     printWin.document.body.innerHTML = '<p style="font-family:sans-serif;padding:24px;">准备打印图片失败，请关闭本页后重新选择文件夹再试。</p>';
     alert('准备打印图片失败，请重新选择文件夹后再试。');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = oldText;
+  }
+}
+
+async function renderBadgeSheet(badgesGroup, pageIndex, totalPages) {
+  const pxPerMm = 300 / 25.4;
+  const width = Math.round(210 * pxPerMm);
+  const height = Math.round(297 * pxPerMm);
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.textBaseline = 'top';
+  ctx.fillStyle = '#B8332C';
+  ctx.font = `bold ${Math.round(3.0 * pxPerMm)}px "PingFang SC","Microsoft YaHei",sans-serif`;
+  ctx.fillText('AI 文创作品展', 6 * pxPerMm, 5 * pxPerMm);
+  ctx.fillStyle = '#8A7B5C';
+  ctx.font = `${Math.round(2.6 * pxPerMm)}px "PingFang SC","Microsoft YaHei",sans-serif`;
+  ctx.fillText(`58mm 徽章 · A4 拼版 · 第 ${pageIndex + 1} 张`, 6 * pxPerMm, 9.5 * pxPerMm);
+
+  const pageLabel = `A4-${String(pageIndex + 1).padStart(2, '0')} / 共 ${totalPages} 张`;
+  const labelW = ctx.measureText(pageLabel).width;
+  ctx.fillText(pageLabel, width - 8 * pxPerMm - labelW, height - 9 * pxPerMm);
+
+  const slots = [
+    { x: 27.5, y: 31 }, { x: 107.5, y: 31 },
+    { x: 27.5, y: 111 }, { x: 107.5, y: 111 },
+    { x: 27.5, y: 191 }, { x: 107.5, y: 191 },
+  ];
+  const badgeSize = 75 * pxPerMm;
+
+  for (let i = 0; i < badgesGroup.length; i++) {
+    const badge = badgesGroup[i];
+    const slot = slots[i];
+    const x = slot.x * pxPerMm;
+    const y = slot.y * pxPerMm;
+    const cx = x + badgeSize / 2;
+    const cy = y + badgeSize / 2;
+    const r = badgeSize / 2;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.fillStyle = '#E8DFC7';
+    ctx.fill();
+    ctx.clip();
+    const img = await loadImageForCanvas(badge.url);
+    drawCoverImage(ctx, img, x, y, badgeSize, badgeSize);
+    ctx.restore();
+
+    ctx.save();
+    ctx.strokeStyle = '#B8332C';
+    ctx.lineWidth = 0.4 * pxPerMm;
+    ctx.setLineDash([3 * pxPerMm, 2 * pxPerMm]);
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  return canvasToJpegBytes(canvas, 0.9);
+}
+
+async function buildBadgePdfBytes(selectedBadges, onProgress) {
+  const groups = [];
+  for (let i = 0; i < selectedBadges.length; i += 6) groups.push(selectedBadges.slice(i, i + 6));
+  const sheetImages = [];
+  for (let i = 0; i < groups.length; i++) {
+    if (onProgress) onProgress(i + 1, groups.length);
+    sheetImages.push(await renderBadgeSheet(groups[i], i, groups.length));
+  }
+  return buildImagePdf(
+    sheetImages,
+    210 * 72 / 25.4,
+    297 * 72 / 25.4,
+    Math.round(210 * 300 / 25.4),
+    Math.round(297 * 300 / 25.4)
+  );
+}
+
+async function exportBadgePdf() {
+  if (!badges || badges.length === 0) {
+    alert('请先选择徽章图片文件夹。');
+    return;
+  }
+  const btn = document.getElementById('btnExportBadgePdf');
+  const oldText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '生成中...';
+  try {
+    const printable = await preparePrintImages(badges, (cur, total) => {
+      btn.textContent = '处理图片 ' + cur + '/' + total;
+    });
+    const pdfBytes = await buildBadgePdfBytes(printable, (cur, total) => {
+      btn.textContent = '生成PDF ' + cur + '/' + total;
+    });
+    downloadBytes(pdfBytes, '徽章打印-A4拼版.pdf', 'application/pdf');
+  } catch (e) {
+    console.error(e);
+    alert('生成徽章 PDF 失败，请检查图片后重试。');
   } finally {
     btn.disabled = false;
     btn.textContent = oldText;
