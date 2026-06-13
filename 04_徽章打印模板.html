@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>石渠 AI 文创课 · 58mm 徽章 A4 拼版打印模板</title>
+<style>
+  /* ============================================================
+     徽章打印说明
+     ------------------------------------------------------------
+     成品：58mm 圆形徽章
+     打印图直径：75mm（含 8.5mm 包覆出血区）
+     安全可见区：直径 58mm 圆内
+     拼版：A4 纵向，2 列 × 3 行 = 每张 A4 出 6 枚
+
+     ---------- 替换图片步骤 ----------
+     1. 把学员图保存到本 HTML 同目录，建议方形/接近方形构图
+     2. 用编辑器（VSCode / 记事本）打开本文件
+     3. 搜索 "img/badge-1.png"（共 6 处）替换为真实路径
+     4. Chrome 打开 → Ctrl/Cmd + P
+     5. 关键设置：A4 纵向 / 缩放 100% / 边距 无 / 勾选背景图形
+     6. 纸张推荐：A4 哑光照片纸 200g 或铜版纸 180g
+
+     ---------- 裁切步骤 ----------
+     1. 用 75mm 圆形冲压器 / 圆规裁切器沿圆周裁下
+     2. 放入 58mm 徽章机
+     3. 按下手柄 2 次（合上盖 → 上下翻转 → 再按一次）
+     ============================================================ */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: #ddd;
+  }
+  .legend {
+    max-width: 900px;
+    margin: 30px auto;
+    padding: 24px 30px;
+    background: white;
+    border-left: 6px solid #B8332C;
+    font-size: 14px;
+    line-height: 1.7;
+    color: #333;
+  }
+  .legend h2 { color: #B8332C; margin-bottom: 8px; }
+  .legend code { background: #FFE9B3; padding: 1px 6px; border-radius: 3px; }
+
+  /* —— A4 纵向纸张 —— */
+  .page {
+    width: 210mm;
+    height: 297mm;
+    background: white;
+    margin: 20px auto;
+    position: relative;
+    box-shadow: 0 4px 12px rgba(0,0,0,.15);
+    page-break-after: always;
+    page-break-inside: avoid;
+    overflow: hidden;
+  }
+
+  /* —— 6 个徽章定位 ——
+        网格：2 列 × 3 行
+        圆形直径 75mm，列间距 5mm，行间距 5mm
+        水平外边距：(210 - 75*2 - 5)/2 = 27.5mm
+        垂直外边距：(297 - 75*3 - 5*2)/2 = 31mm
+  */
+  .badge {
+    position: absolute;
+    width: 75mm;
+    height: 75mm;
+    border-radius: 50%;
+    overflow: hidden;
+    background-color: #E8DFC7;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    /* 出血外圈虚线，仅辅助裁切，打印可见 */
+    border: 0.4mm dashed #B8332C;
+  }
+  .badge .label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #8A7B5C;
+    font-size: 11pt;
+    text-align: center;
+    line-height: 1.6;
+    pointer-events: none;
+  }
+
+  /* —— 6 个位置坐标 —— */
+  .b1 { left: 27.5mm; top: 31mm;  }
+  .b2 { left: 107.5mm; top: 31mm; }
+  .b3 { left: 27.5mm; top: 111mm; }
+  .b4 { left: 107.5mm; top: 111mm;}
+  .b5 { left: 27.5mm; top: 191mm; }
+  .b6 { left: 107.5mm; top: 191mm;}
+
+  /* —— 安全区参考线（圆内 58mm 圆）：屏幕辅助，打印可隐藏 —— */
+  .badge::after {
+    content: "";
+    position: absolute;
+    width: 58mm;
+    height: 58mm;
+    border-radius: 50%;
+    left: 8.5mm;
+    top: 8.5mm;
+    border: 0.2mm dotted rgba(184,51,44,.35);
+    pointer-events: none;
+  }
+
+  /* —— 中心十字辅助线 —— */
+  .crosshair {
+    position: absolute;
+    pointer-events: none;
+    color: rgba(184,51,44,.4);
+    font-size: 9pt;
+  }
+
+  /* —— 角标说明 —— */
+  .corner-info {
+    position: absolute;
+    top: 6mm;
+    left: 6mm;
+    font-size: 8pt;
+    color: #8A7B5C;
+    letter-spacing: 0.5px;
+  }
+  .corner-info b { color: #B8332C; }
+
+  .page-no {
+    position: absolute;
+    bottom: 6mm;
+    right: 8mm;
+    font-size: 8pt;
+    color: #8A7B5C;
+  }
+
+  /* ===================== 打印控制 ===================== */
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+  @media print {
+    body { background: white; }
+    .legend, .page-label { display: none !important; }
+    .page { margin: 0; box-shadow: none; }
+    .badge .label { display: none; } /* 隐藏占位文字 */
+    .badge::after { display: none; } /* 隐藏安全区参考圈，打印时不见 */
+  }
+  .page-label {
+    max-width: 900px;
+    margin: 18px auto -8px;
+    font-size: 13px;
+    color: #7A6F60;
+    padding: 0 8px;
+  }
+  .page-label strong { color: #B8332C; }
+</style>
+</head>
+<body>
+
+<div class="legend">
+  <h2>石渠 AI 文创课 · 58mm 徽章 A4 拼版模板</h2>
+  <ul>
+    <li><strong>每张 A4 出 6 枚徽章</strong>（2 列 × 3 行）</li>
+    <li>打印直径：<code>75mm</code>（成品 58mm + 8.5mm 包覆出血）</li>
+    <li>圆内虚线参考圈即"安全区"，<strong>重要内容请放在虚线内</strong></li>
+    <li>外圈红色虚线是裁切线，按这条裁出 75mm 圆</li>
+    <li>建议提交豆包出图时使用<strong>方形构图（1:1）</strong>，主体居中</li>
+    <li>不够 6 张？把多余的 <code>.badge</code> 删掉 / 留空即可</li>
+  </ul>
+  <h2>使用步骤</h2>
+  <ol>
+    <li>把学员图按顺序保存到 <code>img/</code> 子目录，命名 <code>badge-1.png</code> ~ <code>badge-6.png</code></li>
+    <li>在源码搜索 <code>img/badge-1.png</code> 等路径，确认匹配</li>
+    <li>用 Chrome / Edge 打开本 HTML → Ctrl/Cmd + P</li>
+    <li>关键打印设置：<strong>A4 纵向、缩放 100%、边距 无、勾选"背景图形"</strong></li>
+    <li>裁切：75mm 圆形冲压器或圆规裁切器，沿外圈虚线</li>
+    <li>放入 58mm 徽章机，按下手柄两次完成</li>
+  </ol>
+</div>
+
+<!-- ================================================================ -->
+<!-- 第 1 页：6 枚徽章                                                  -->
+<!-- ================================================================ -->
+<div class="page-label">第 1 页 · <strong>徽章 1–6</strong></div>
+<div class="page">
+
+  <div class="corner-info">
+    <b>石渠 · AI 文创第一课</b> ｜ 58mm 徽章 · A4 拼版 · 第 1 张
+  </div>
+
+  <div class="badge b1" style="background-image: url('img/badge-1.png');">
+    <div class="label">学员 1<br><small>替换 img/badge-1.png</small></div>
+  </div>
+  <div class="badge b2" style="background-image: url('img/badge-2.png');">
+    <div class="label">学员 2<br><small>替换 img/badge-2.png</small></div>
+  </div>
+  <div class="badge b3" style="background-image: url('img/badge-3.png');">
+    <div class="label">学员 3<br><small>替换 img/badge-3.png</small></div>
+  </div>
+  <div class="badge b4" style="background-image: url('img/badge-4.png');">
+    <div class="label">学员 4<br><small>替换 img/badge-4.png</small></div>
+  </div>
+  <div class="badge b5" style="background-image: url('img/badge-5.png');">
+    <div class="label">学员 5<br><small>替换 img/badge-5.png</small></div>
+  </div>
+  <div class="badge b6" style="background-image: url('img/badge-6.png');">
+    <div class="label">学员 6<br><small>替换 img/badge-6.png</small></div>
+  </div>
+
+  <div class="page-no">A4-01 / 总 ? 张</div>
+</div>
+
+<!-- ================================================================ -->
+<!-- 第 2 页：6 枚徽章（复制本块再添加更多页）                          -->
+<!-- ================================================================ -->
+<div class="page-label">第 2 页 · <strong>徽章 7–12</strong>（复制本页 div.page 即可扩展）</div>
+<div class="page">
+
+  <div class="corner-info">
+    <b>石渠 · AI 文创第一课</b> ｜ 58mm 徽章 · A4 拼版 · 第 2 张
+  </div>
+
+  <div class="badge b1" style="background-image: url('img/badge-7.png');">
+    <div class="label">学员 7</div>
+  </div>
+  <div class="badge b2" style="background-image: url('img/badge-8.png');">
+    <div class="label">学员 8</div>
+  </div>
+  <div class="badge b3" style="background-image: url('img/badge-9.png');">
+    <div class="label">学员 9</div>
+  </div>
+  <div class="badge b4" style="background-image: url('img/badge-10.png');">
+    <div class="label">学员 10</div>
+  </div>
+  <div class="badge b5" style="background-image: url('img/badge-11.png');">
+    <div class="label">学员 11</div>
+  </div>
+  <div class="badge b6" style="background-image: url('img/badge-12.png');">
+    <div class="label">学员 12</div>
+  </div>
+
+  <div class="page-no">A4-02 / 总 ? 张</div>
+</div>
+
+<div class="legend">
+  <h2>常见问题</h2>
+  <ul>
+    <li><strong>裁切后边缘白边？</strong>提交豆包出图时让图片填到画面边缘，避开白底；或在 HTML 里加 <code>background-color</code> 与主色相近。</li>
+    <li><strong>主体被切？</strong>所有重要主体必须落在内圈虚线（58mm）以内。</li>
+    <li><strong>颜色暗？</strong>哑光纸偏灰，可用照片纸或在打印机驱动开"鲜艳模式"。</li>
+    <li><strong>批量更多？</strong>复制整块 <code>div.page</code>，按顺序换图。一个班 30 人，需要 5 张 A4。</li>
+    <li><strong>豆包图比例不对？</strong>在提示词最后加 <code>1:1 方形构图，主体居中</code>。</li>
+  </ul>
+</div>
+
+</body>
+</html>

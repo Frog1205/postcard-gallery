@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Claude_Preview__preview_start",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "PowerShell(gh auth status 2>&1)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://frog1205.github.io/postcard-gallery/\")",
+      "Bash(gh pr create --base base --head main --title 'feat: AI文创-明信片作品展网站' --body ' *)",
+      "Bash(git add *)"
+    ]
+  }
+}
